@@ -1,0 +1,5 @@
+label-studio-data
+label-studio-external-data
+pg-data
+
+.env
