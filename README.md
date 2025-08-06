@@ -1,4 +1,4 @@
-# Label studio deploy
+# Label studio deploy with ml backend
 
 ## Usage
 
