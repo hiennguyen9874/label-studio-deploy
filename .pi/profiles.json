@@ -22,7 +22,8 @@
         "improve-codebase-architecture",
         "pragmatic-principles",
         "prompt-leverage",
-        "systematic-debugging"
+        "systematic-debugging",
+        "label_studio_ml"
       ],
       "mcpServersEnable": [
         "context-mode"
@@ -63,7 +64,8 @@
         "test-driven-development",
         "using-superpowers",
         "verification-before-completion",
-        "writing-plans"
+        "writing-plans",
+        "label_studio_ml"
       ],
       "mcpServersEnable": [
         "context-mode"
