@@ -404,7 +404,6 @@ class DINOBackend(LabelStudioMLBase):
     
     # takes straight masks and returns predictions
     def sam_predictions(self, masks, probs, lengths, from_name_b, to_name_b):
-        
         results = []
         total_score = 0
         for mask, prob, length in zip(masks, probs, lengths):

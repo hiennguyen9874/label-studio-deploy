@@ -1,6 +1,5 @@
 FROM pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
 ARG DEBIAN_FRONTEND=noninteractive
-ARG TEST_ENV
 
 WORKDIR /app
 
@@ -30,15 +29,21 @@ ENV CUDA_HOME=/opt/conda \
 
 # install base requirements
 COPY requirements-base.txt .
-RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
+RUN --mount=type=cache,target=/.cache,sharing=locked \
     pip install -r requirements-base.txt
 
 COPY requirements.txt .
-RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
+RUN --mount=type=cache,target=/.cache,sharing=locked \
     pip3 install -r requirements.txt
+
+# install segment-anything-3
+RUN cd / && git clone --depth 1 --branch main --single-branch https://github.com/facebookresearch/sam3.git
+WORKDIR /sam3
+RUN --mount=type=cache,target=/.cache,sharing=locked \
+    pip3 install -e .
 
 WORKDIR /app
 
 COPY . ./
 
-CMD ["../app/start.sh"]
+CMD ["/app/start.sh"]

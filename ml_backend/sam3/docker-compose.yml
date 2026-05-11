@@ -6,18 +6,13 @@ services:
     image: humansignal/ml-backend:v0
     build:
       context: .
-      args:
-        TEST_ENV: ${TEST_ENV}
-
-#    deploy:
-#      resources:
-#        reservations:
-#          devices:
-#            - driver: nvidia
-#              count: 1
-#              capabilities: [ gpu ]
-
-
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
     environment:
       # specify these parameters if you want to use basic auth for the model server
       - BASIC_AUTH_USER=
@@ -33,10 +28,9 @@ services:
       - MODEL_DIR=/data/models
       # specify device
       - DEVICE=cuda  # or 'cpu' (coming soon)
-      # SAM2 model config
-      - MODEL_CONFIG=configs/sam2.1/sam2.1_hiera_l.yaml
-      # SAM2 checkpoint
-      - MODEL_CHECKPOINT=sam2.1_hiera_large.pt
+
+      - LABEL_STUDIO_HOST=${LABEL_STUDIO_HOST}
+      - LABEL_STUDIO_ACCESS_TOKEN=${LABEL_STUDIO_ACCESS_TOKEN}
 
       # Specify the Label Studio URL and API key to access
       # uploaded, local storage and cloud storage files.
@@ -48,4 +42,8 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - "./data/server:/data"
+      - ${DATA_PATH}/data:/label-studio/data:rw
+      - ${DATA_PATH}/external-data:/external-data
+      - ./models:/models
+    extra_hosts:
+      - "dat-ml.dscilab.com:10.1.1.41"
