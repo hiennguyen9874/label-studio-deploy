@@ -1,5 +1,6 @@
 import logging
 
+import cv2
 import torch
 from sam3.model_builder import build_sam3_image_model
 from sam3.model.sam3_image_processor import Sam3Processor
@@ -103,6 +104,81 @@ class NewModel(LabelStudioMLBase):
         scores = scores.cpu().numpy()
         return masks, scores
 
+    def _to_polygon_prediction(
+        self, masks, scores, width, height, from_name, to_name, label
+    ):
+        logger.debug("Start processing prediction masks")
+        results = []
+        total_score = 0
+
+        for mask, score in zip(masks, scores):
+            score = float(score)
+            mask_uint8 = (mask * 255).astype("uint8")
+            polygons, _ = cv2.findContours(
+                mask_uint8, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE
+            )
+            polygons = [p.squeeze() for p in polygons]
+
+            label_ids_list = []
+            for i, polygon in enumerate(polygons):
+                if polygon.ndim < 2 or len(polygon) == 0:
+                    continue
+
+                label_id = str(uuid4())[:7]
+
+                if not (polygon[0] == polygon[-1]).all():
+                    # close the polygon
+                    logger.debug(f"Polygon at index {i} was closed by first point")
+                    polygon = np.append(polygon, polygon[0][np.newaxis, :], axis=0)
+
+                # convert pixel coords to percentage
+                polygon = polygon.astype(float)
+                polygon[:, 0] = polygon[:, 0] / width * 100
+                polygon[:, 1] = polygon[:, 1] / height * 100
+
+                results.append(
+                    {
+                        "id": label_id,
+                        "from_name": from_name,
+                        "to_name": to_name,
+                        "original_width": width,
+                        "original_height": height,
+                        "image_rotation": 0,
+                        "value": {
+                            "points": polygon.tolist(),
+                            "polygonlabels": [label],
+                        },
+                        "score": score,
+                        "type": "polygonlabels",
+                        "readonly": False,
+                        "origin": "manual",
+                    }
+                )
+                label_ids_list.append(label_id)
+                total_score += score
+
+            # link multiple polygons from the same mask with relations
+            if len(label_ids_list) > 1:
+                label_id_main = label_ids_list[0]
+                for label_relation in label_ids_list[1:]:
+                    results.append(
+                        {
+                            "from_id": label_id_main,
+                            "to_id": label_relation,
+                            "type": "relation",
+                            "direction": "right",
+                        }
+                    )
+
+        logger.debug(
+            f"Masks processed. Results contain {len(results)} objects (including relations)"
+        )
+        return {
+            "result": results,
+            "score": total_score / max(len(results), 1),
+            "model_version": self.get("model_version"),
+        }
+
     def _to_brush_prediction(
         self, masks, scores, width, height, from_name, to_name, label
     ):
@@ -158,6 +234,7 @@ class NewModel(LabelStudioMLBase):
         if not tasks:
             return [{"result": [], "score": 0.0, "model_version": model_version}]
 
+        # from_name, to_name, value = self.get_first_tag_occurence("PolygonLabels", "Image")
         from_name, to_name, value = self.get_first_tag_occurence("BrushLabels", "Image")
 
         if not context or not context.get("result"):
@@ -199,6 +276,9 @@ class NewModel(LabelStudioMLBase):
                     label = values[key][0]
                     break
 
+        # prediction = self._to_polygon_prediction(
+        #     masks, scores, image_width, image_height, from_name, to_name, label
+        # )
         prediction = self._to_brush_prediction(
             masks, scores, image_width, image_height, from_name, to_name, label
         )
