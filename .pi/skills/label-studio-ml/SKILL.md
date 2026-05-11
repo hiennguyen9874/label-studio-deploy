@@ -1,4 +1,5 @@
 ---
+name: label-studio-ml
 description: Use when need create or update an ML backend for Label Studio
 ---
 # Best Practices for Creating Label Studio ML Backends
