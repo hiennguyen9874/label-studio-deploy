@@ -21,8 +21,11 @@
     "./extensions/inline-bash.ts",
     "./extensions/behavioral-guidelines.ts",
     "./extensions/pi-documentation.ts",
+    "./extensions/skills-instructions-rewriter.ts",
     "./extensions/prompt-skills.ts",
-    "./extensions/dump-system-prompt.ts"
+    "./extensions/dump-system-prompt.ts",
+    "./extensions/profile/index.ts",
+    "-./extensions/pi-goal/index.ts"
   ],
   "extensionState": {
     "behavioralGuidelinesEnabled": true,
@@ -34,7 +37,8 @@
     "behavioralGuidelinesValidationEnabled": true,
     "behavioralGuidelinesEfficiencyEnabled": true,
     "behavioralGuidelinesFinalResponseEnabled": true,
-    "piDocumentationEnabled": false
+    "piDocumentationEnabled": true,
+    "skillsInstructionsRewriterEnabled": true
   },
   "subagents": {
     "agentOverrides": {
@@ -87,6 +91,7 @@
     "-skills/golang-patterns",
     "-skills/golang-testing",
     "-skills/interface-design",
+    "-skills/pi-goal",
     "-skills/postgres-patterns",
     "-skills/prd",
     "-skills/react-best-practices",
@@ -100,7 +105,6 @@
     "-skills/subagent-driven-development",
     "-skills/test-driven-development",
     "-skills/ui-ux-pro-max",
-    "-skills/using-superpowers",
     "-skills/verification-before-completion",
     "-skills/web-design-guidelines",
     "-skills/writing-plans",

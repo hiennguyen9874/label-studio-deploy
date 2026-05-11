@@ -62,7 +62,6 @@
         "requesting-code-review",
         "subagent-driven-development",
         "test-driven-development",
-        "using-superpowers",
         "verification-before-completion",
         "writing-plans",
         "label-studio-ml"
@@ -104,7 +103,6 @@
         "requesting-code-review",
         "subagent-driven-development",
         "test-driven-development",
-        "using-superpowers",
         "verification-before-completion",
         "writing-plans",
         "api-design",
@@ -151,7 +149,6 @@
         "requesting-code-review",
         "subagent-driven-development",
         "test-driven-development",
-        "using-superpowers",
         "verification-before-completion",
         "writing-plans",
         "coding-standards",
@@ -203,7 +200,6 @@
         "requesting-code-review",
         "subagent-driven-development",
         "test-driven-development",
-        "using-superpowers",
         "verification-before-completion",
         "writing-plans",
         "docker-patterns"
