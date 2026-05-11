@@ -29,6 +29,9 @@ services:
       # specify device
       - DEVICE=cuda  # or 'cpu' (coming soon)
 
+      # specify response mode: bbox, polygon, or brush (default: bbox)
+      # - SAM3_RESPONSE_MODE=brush
+
       - LABEL_STUDIO_HOST=${LABEL_STUDIO_HOST}
       - LABEL_STUDIO_ACCESS_TOKEN=${LABEL_STUDIO_ACCESS_TOKEN}
 

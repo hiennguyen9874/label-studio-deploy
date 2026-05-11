@@ -1,4 +1,5 @@
 import logging
+import os
 
 import cv2
 import torch
@@ -14,6 +15,14 @@ from label_studio_sdk.converter import brush
 
 logger = logging.getLogger(__name__)
 
+SAM3_RESPONSE_MODE = "SAM3_RESPONSE_MODE"
+VALID_RESPONSE_MODES = {"bbox", "polygon", "brush"}
+MODE_TO_TAG = {
+    "bbox": "RectangleLabels",
+    "polygon": "PolygonLabels",
+    "brush": "BrushLabels",
+}
+
 
 class NewModel(LabelStudioMLBase):
     def setup(self):
@@ -21,6 +30,16 @@ class NewModel(LabelStudioMLBase):
         self.set("model_version", model_version)
         self._model = None
         self._processor = None
+
+        # Read and validate response mode from environment
+        response_mode = os.getenv(SAM3_RESPONSE_MODE, "bbox").lower().strip()
+        if response_mode not in VALID_RESPONSE_MODES:
+            raise ValueError(
+                f"Invalid {SAM3_RESPONSE_MODE}='{response_mode}'. "
+                f"Must be one of: {', '.join(sorted(VALID_RESPONSE_MODES))}"
+            )
+        self._response_mode = response_mode
+        logger.info(f"SAM3 response mode: {self._response_mode}")
 
     def _ensure_model_loaded(self):
         if self._model is not None and self._processor is not None:
@@ -103,6 +122,68 @@ class NewModel(LabelStudioMLBase):
         masks = masks[:, 0, :, :].cpu().numpy().astype(np.uint8)
         scores = scores.cpu().numpy()
         return masks, scores
+
+    def _to_bbox_prediction(
+        self, masks, scores, width, height, from_name, to_name, label
+    ):
+        logger.debug("Start processing prediction masks to bounding boxes")
+        results = []
+        total_score = 0
+
+        for mask, score in zip(masks, scores):
+            score = float(score)
+            mask_uint8 = (mask * 255).astype("uint8")
+
+            # Find contours to get bounding box of the entire mask
+            contours, _ = cv2.findContours(
+                mask_uint8, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+            )
+            if not contours:
+                continue
+
+            # Combine all contours to get one bounding box per mask
+            all_points = np.vstack(contours)
+            x, y, w, h = cv2.boundingRect(all_points)
+
+            # Convert pixel coordinates to percentage
+            x_pct = x / width * 100
+            y_pct = y / height * 100
+            w_pct = w / width * 100
+            h_pct = h / height * 100
+
+            label_id = str(uuid4())[:7]
+
+            results.append(
+                {
+                    "id": label_id,
+                    "from_name": from_name,
+                    "to_name": to_name,
+                    "original_width": width,
+                    "original_height": height,
+                    "image_rotation": 0,
+                    "value": {
+                        "rectanglelabels": [label],
+                        "x": x_pct,
+                        "y": y_pct,
+                        "width": w_pct,
+                        "height": h_pct,
+                    },
+                    "score": score,
+                    "type": "rectanglelabels",
+                    "readonly": False,
+                    "origin": "manual",
+                }
+            )
+            total_score += score
+
+        logger.debug(
+            f"Masks processed. Results contain {len(results)} bounding boxes"
+        )
+        return {
+            "result": results,
+            "score": total_score / max(len(results), 1),
+            "model_version": self.get("model_version"),
+        }
 
     def _to_polygon_prediction(
         self, masks, scores, width, height, from_name, to_name, label
@@ -234,8 +315,8 @@ class NewModel(LabelStudioMLBase):
         if not tasks:
             return [{"result": [], "score": 0.0, "model_version": model_version}]
 
-        # from_name, to_name, value = self.get_first_tag_occurence("PolygonLabels", "Image")
-        from_name, to_name, value = self.get_first_tag_occurence("BrushLabels", "Image")
+        tag_type = MODE_TO_TAG[self._response_mode]
+        from_name, to_name, value = self.get_first_tag_occurence(tag_type, "Image")
 
         if not context or not context.get("result"):
             return [{"result": [], "score": 0.0, "model_version": model_version}]
@@ -276,10 +357,16 @@ class NewModel(LabelStudioMLBase):
                     label = values[key][0]
                     break
 
-        # prediction = self._to_polygon_prediction(
-        #     masks, scores, image_width, image_height, from_name, to_name, label
-        # )
-        prediction = self._to_brush_prediction(
-            masks, scores, image_width, image_height, from_name, to_name, label
-        )
+        if self._response_mode == "bbox":
+            prediction = self._to_bbox_prediction(
+                masks, scores, image_width, image_height, from_name, to_name, label
+            )
+        elif self._response_mode == "polygon":
+            prediction = self._to_polygon_prediction(
+                masks, scores, image_width, image_height, from_name, to_name, label
+            )
+        else:  # brush
+            prediction = self._to_brush_prediction(
+                masks, scores, image_width, image_height, from_name, to_name, label
+            )
         return [prediction]
