@@ -34,11 +34,11 @@
     "behavioralGuidelinesExecutionPolicyEnabled": true,
     "behavioralGuidelinesEvidenceDisciplineEnabled": true,
     "behavioralGuidelinesChangeScopeEnabled": true,
-    "behavioralGuidelinesValidationEnabled": true,
+    "behavioralGuidelinesValidationEnabled": false,
     "behavioralGuidelinesEfficiencyEnabled": true,
     "behavioralGuidelinesFinalResponseEnabled": true,
-    "piDocumentationEnabled": true,
-    "skillsInstructionsRewriterEnabled": true
+    "skillsInstructionsRewriterEnabled": true,
+    "piDocumentationEnabled": true
   },
   "subagents": {
     "agentOverrides": {
